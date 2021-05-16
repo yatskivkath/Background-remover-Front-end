@@ -10,7 +10,7 @@ export default ({captures=[]}) => (
     >
         {captures.map(({ uri }) => (
             <View style={styles.galleryImageContainer} key={uri}>
-                <Image source={{ uri }} style={styles.galleryImage} />
+                <Image source={{ uri }} style={styles.galleryImage} onClick="alert('Hello')" />
             </View>
         ))}
     </ScrollView>

@@ -1,10 +1,11 @@
 import React from 'react';
-import { View, Text } from 'react-native';
+import { Text, View} from 'react-native';
 import { Camera } from 'expo-camera';
 import * as Permissions  from 'expo-permissions';
 import Toolbar from './toolbar.component';
 import Gallery from './gallery.component';
 import * as MediaLibrary from 'expo-media-library';
+import * as FileSystem from 'expo-file-system';
 
 import styles from './styles';
 
@@ -31,78 +32,64 @@ export default class CameraPage extends React.Component {
             allowsEditing: true,
             aspect: [4, 3],
         }); 
-        
-        console.log("********************\nPhoto");
-        console.log(photoData);
 
-        //Saving image to Galery
-        MediaLibrary.createAssetAsync(photoData['uri'])
-          .then(() => {
-                console.log('Album created!');
-            })
-            .catch(error => {
-                console.log('err', error);
-            });
 
-         // Upload the image using the fetch and FormData APIs
-        let formData = new FormData();
-        // Assume "photo" is the name of the form field the server expects
-        formData.append('base64', photoData['base64']);
+        let body = new FormData();
+        body.append('image', { uri: photoData.uri, name: 'picture.jpg', type: 'image/jpg' });
+           
 
-        fetch("http://861227d38a7c.ngrok.io/post", {
-            method: 'POST',
-            body: formData
+        //Making request
+        fetch('http://fbef10d8342a.ngrok.io/post', {
+            mode: 'no-cors',
+            method: "POST",
+            body: body
         })
-        .then(response => response.json())
-        .then(result => {
-            console.log("******************\nRESULT");
-            console.log(result);
-            })
-        .catch(err => { console.log(err); })
-        
-        
-        const config = {
-            method: 'POST',
-            headers: {
-                'X-Api-Key': 'jtszK5tThjkU9YNuLM3J3Qyc'
-            },
-            body: {
-                image_file_b64 : photoData['base64'],
-                image_url : photoData['uri']
+        .then(function (response) {
+            if (response.ok) {
+
+                response.json().then(async (json) => {
+                    const url = "http://fbef10d8342a.ngrok.io" + json["file"];
+                    let filename = Date.now() + ".png";
+                
+                    const fileUri  = `${FileSystem.documentDirectory}${filename}`;
+                    const downloadedFile = await FileSystem.downloadAsync(url, fileUri);
+                    
+                    if (downloadedFile.status != 200) {
+                      handleError();
+                    }
+
+
+                    MediaLibrary.createAssetAsync(downloadedFile.uri)
+                    .then(() => {
+                            console.log('Album created!');
+                            alert("Downloaded!");
+                        })
+                        .catch(error => {
+                            console.error('err', error);
+                        });
+
+                })
+
+
+            } else if (response.status == 401) {
+                alert("Oops! ");
             }
-        };
+        },
+        function (e) {
+            alert("Error submitting form! Error: " + e);
+        });
 
-        // fetch('https://api.remove.bg/v1.0/removebg', config)
-        //     .then(response => {
-        //         console.log(response);
-        //         response.json();
-        //     })
-        //     .then(result => {
-        //         console.log("******************\nRESULT");
-        //         console.log(result);
-        //     })
-        //     .catch(err => { console.log(err); })
-            
-           
-
-            // fetch('http://861227d38a7c.ngrok.io')
-            // .then(response => {
-            //     response.json()}
-            //     )
-            // .then(result => {
-            //     console.log("******************\nRESULT");
-            //     console.log(result);
-            // })
-            // .catch(err => { console.log(err); });
-
-           
+    
 
         this.setState({ capturing: false, captures: [photoData, ...this.state.captures] })
     };
 
+
+
     async componentDidMount() {
         const camera = await Permissions.askAsync(Permissions.CAMERA);
-        const audio = await Permissions.askAsync(Permissions.AUDIO_RECORDING);
+        const audio = await Permissions.askAsync(Permissions.MEDIA_LIBRARY);
+
         // const medialibrary = camera;
         const hasCameraPermission = (camera.status === 'granted' && audio.status === 'granted');
 
@@ -138,9 +125,6 @@ export default class CameraPage extends React.Component {
                     cameraType={cameraType}
                     setFlashMode={this.setFlashMode}
                     setCameraType={this.setCameraType}
-                    // onCaptureIn={this.handleCaptureIn}
-                    // onCaptureOut={this.handleCaptureOut}
-                    // onLongCapture={this.handleLongCapture}
                     onShortCapture={this.handleShortCapture}
                 />
             </React.Fragment>
