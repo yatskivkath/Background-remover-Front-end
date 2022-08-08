@@ -4,7 +4,8 @@
 </br>
 <p> <h3> Technologies </h3>
 <ul>
-<li> React Native </li>
-<li> HTML/CSS </li>
+<li> React Native</li>
+  <li> Expo </li>
+<li> HTML/CSS/JS </li>
 </ul>
 </p>
